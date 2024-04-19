@@ -119,3 +119,53 @@ func TestPostfixParsing(t *testing.T) {
 		}
 	}
 }
+
+func TestParenParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"(1 + 2)",
+			"(1 + 2)",
+		},
+		{
+			"(1 + 2) + 3",
+			"((1 + 2) + 3)",
+		},
+		{
+			"1 + (2 + 3) + 4",
+			"((1 + (2 + 3)) + 4)",
+		},
+		{
+			"(5 + 5) * 2",
+			"((5 + 5) * 2)",
+		},
+		{
+			"2 / (5 + 5)",
+			"(2 / (5 + 5))",
+		},
+		{
+			"(5 + 5) * 2 * (5 + 5)",
+			"(((5 + 5) * 2) * (5 + 5))",
+		},
+		{
+			"1 + (2 + 3) * 4",
+			"(1 + ((2 + 3) * 4))",
+		},
+		{
+			"-(5 + 5)",
+			"(-(5 + 5))",
+		},
+	}
+
+	for _, tt := range tests {
+		l := NewLexer(tt.input)
+		p := NewParser(l)
+		actual := p.Parse()
+
+		if actual != tt.expected {
+			t.Errorf("expected=%q, got=%q", tt.expected, actual)
+		}
+	}
+}

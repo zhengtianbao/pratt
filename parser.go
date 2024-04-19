@@ -55,6 +55,8 @@ func (p *Parser) parseExpression(precedence int) Expression {
 		leftExp = p.parseNumberExpression()
 	case MINUS:
 		leftExp = p.parsePrefixExpression()
+	case LPAREN:
+		leftExp = p.parseParenExpression()
 	default:
 		leftExp = nil
 	}
@@ -78,6 +80,17 @@ func (p *Parser) parseExpression(precedence int) Expression {
 		}
 	}
 	return leftExp
+}
+
+func (p *Parser) parseParenExpression() Expression {
+	p.nextToken()
+
+	exp := p.parseExpression(LOWEST)
+
+	if p.peekToken.Type == RPAREN {
+		p.nextToken()
+	}
+	return exp
 }
 
 func (p *Parser) parsePrefixExpression() Expression {
