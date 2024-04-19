@@ -24,14 +24,37 @@ func (p *Parser) nextToken() {
 }
 
 func (p *Parser) Parse() string {
-	switch p.curToken.Type {
-	case NUMBER:
-		return p.parseNumberExpression().String()
-	default:
+	expr := p.parseExpression()
+	if expr == nil {
 		return ""
 	}
+	return expr.String()
+}
+
+func (p *Parser) parseExpression() Expression {
+	var leftExp Expression
+	switch p.curToken.Type {
+	case NUMBER:
+		leftExp = p.parseNumberExpression()
+	case MINUS:
+		leftExp = p.parsePrefixExpression()
+	default:
+		leftExp = nil
+	}
+	return leftExp
 }
 
 func (p *Parser) parseNumberExpression() Expression {
 	return &Number{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parsePrefixExpression() Expression {
+	expression := &PrefixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+	}
+
+	p.nextToken()
+	expression.Right = p.parseExpression()
+	return expression
 }
