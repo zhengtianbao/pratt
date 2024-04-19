@@ -1,5 +1,22 @@
 package main
 
+const (
+	_ int = iota
+	LOWEST
+	SUM     // +
+	PRODUCT // *
+	PREFIX  // -X
+	POSTFIX // X!
+)
+
+var precedences = map[TokenType]int{
+	PLUS:     SUM,
+	MINUS:    SUM,
+	ASTERISK: PRODUCT,
+	SLASH:    PRODUCT,
+	BANG:     POSTFIX,
+}
+
 type Parser struct {
 	l *Lexer
 
@@ -24,14 +41,14 @@ func (p *Parser) nextToken() {
 }
 
 func (p *Parser) Parse() string {
-	expr := p.parseExpression()
+	expr := p.parseExpression(LOWEST)
 	if expr == nil {
 		return ""
 	}
 	return expr.String()
 }
 
-func (p *Parser) parseExpression() Expression {
+func (p *Parser) parseExpression(precedence int) Expression {
 	var leftExp Expression
 	switch p.curToken.Type {
 	case NUMBER:
@@ -41,11 +58,20 @@ func (p *Parser) parseExpression() Expression {
 	default:
 		leftExp = nil
 	}
-	return leftExp
-}
 
-func (p *Parser) parseNumberExpression() Expression {
-	return &Number{Token: p.curToken, Value: p.curToken.Literal}
+	for p.peekToken.Type != EOF {
+		switch p.peekToken.Type {
+		case PLUS, MINUS, ASTERISK, SLASH:
+			if precedence >= p.peekPrecedence() {
+				return leftExp
+			}
+			p.nextToken()
+			leftExp = p.parseInfixExpression(leftExp)
+		default:
+			return leftExp
+		}
+	}
+	return leftExp
 }
 
 func (p *Parser) parsePrefixExpression() Expression {
@@ -55,6 +81,37 @@ func (p *Parser) parsePrefixExpression() Expression {
 	}
 
 	p.nextToken()
-	expression.Right = p.parseExpression()
+	expression.Right = p.parseExpression(PREFIX)
 	return expression
+}
+
+func (p *Parser) parseInfixExpression(left Expression) Expression {
+	expression := &InfixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left,
+	}
+	precedence := p.curPrecedence()
+	p.nextToken()
+	expression.Right = p.parseExpression(precedence)
+
+	return expression
+}
+
+func (p *Parser) parseNumberExpression() Expression {
+	return &Number{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) curPrecedence() int {
+	if p, ok := precedences[p.curToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+	return LOWEST
 }
