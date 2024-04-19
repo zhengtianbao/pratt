@@ -89,3 +89,33 @@ func TestInfixParsing(t *testing.T) {
 		}
 	}
 }
+
+func TestPostfixParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"1!",
+			"(1!)",
+		},
+		{
+			"1 + 2!",
+			"(1 + (2!))",
+		},
+		{
+			"1 + 2! + 3",
+			"((1 + (2!)) + 3)",
+		},
+	}
+
+	for _, tt := range tests {
+		l := NewLexer(tt.input)
+		p := NewParser(l)
+		actual := p.Parse()
+
+		if actual != tt.expected {
+			t.Errorf("expected=%q, got=%q", tt.expected, actual)
+		}
+	}
+}

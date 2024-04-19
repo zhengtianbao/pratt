@@ -67,6 +67,12 @@ func (p *Parser) parseExpression(precedence int) Expression {
 			}
 			p.nextToken()
 			leftExp = p.parseInfixExpression(leftExp)
+		case BANG:
+			if precedence >= p.peekPrecedence() {
+				return leftExp
+			}
+			p.nextToken()
+			leftExp = p.parsePostExpression(leftExp)
 		default:
 			return leftExp
 		}
@@ -95,6 +101,15 @@ func (p *Parser) parseInfixExpression(left Expression) Expression {
 	p.nextToken()
 	expression.Right = p.parseExpression(precedence)
 
+	return expression
+}
+
+func (p *Parser) parsePostExpression(left Expression) Expression {
+	expression := &PostfixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left,
+	}
 	return expression
 }
 
